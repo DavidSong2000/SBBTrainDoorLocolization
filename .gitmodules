@@ -1,0 +1,3 @@
+[submodule "Monocluar-Pose-Estimation-Pipeline-for-Spot"]
+	path = Monocluar-Pose-Estimation-Pipeline-for-Spot
+	url = https://github.com/jiaqchen/Monocluar-Pose-Estimation-Pipeline-for-Spot.git
