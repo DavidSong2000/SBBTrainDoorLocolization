@@ -60,6 +60,9 @@ python -m pip install 'git+https://github.com/MaureenZOU/detectron2-xyz.git'
 pip install git+https://github.com/cocodataset/panopticapi.git
 git clone https://github.com/UX-Decoder/Semantic-SAM
 cd Semantic-SAM
+git clone https://github.com/facebookresearch/Mask2Former.git
+cd Mask2Former/mask2former/modeling/pixel_decoder/ops
+sh make.sh
 python -m pip install -r requirements.txt
 
 export DATASET=/pth/to/dataset  # path to your coco data

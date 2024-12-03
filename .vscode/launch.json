@@ -1,0 +1,23 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: Current File with Arguments",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "train_net.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--eval_only",
+                "--resume",
+                "--num-gpus=1",
+                "--config-file=configs/semantic_sam_only_sa-1b_swinL.yaml",
+                "COCO.TEST.BATCH_SIZE_TOTAL=$n",
+                "MODEL.WEIGHTS=ckpt/swinl_only_sam_many2many.pth"
+            ]
+        }
+    ]
+}

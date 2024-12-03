@@ -22,7 +22,7 @@ from tasks import interactive_infer_image_idino_m2m_auto, prompt_switch
 def parse_option():
     parser = argparse.ArgumentParser('SemanticSAM Demo', add_help=False)
     parser.add_argument('--conf_files', default="configs/semantic_sam_only_sa-1b_swinL.yaml", metavar="FILE", help='path to config file', )
-    parser.add_argument('--ckpt', default="", metavar="FILE", help='path to ckpt', )
+    parser.add_argument('--ckpt', default="ckpt/swinl_only_sam_many2many.pth", metavar="", help='path to ckpt', )
     args = parser.parse_args()
 
     return args

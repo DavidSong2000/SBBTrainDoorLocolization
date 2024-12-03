@@ -62,6 +62,7 @@ def inference(image,text,text_part,text_thresh,*args, **kwargs):
         return a,b
 
 
+from gradio.events import Dependency
 
 class ImageMask(gr.components.Image):
     """
@@ -75,6 +76,10 @@ class ImageMask(gr.components.Image):
 
     def preprocess(self, x):
         return super().preprocess(x)
+    from typing import Callable, Literal, Sequence, Any, TYPE_CHECKING
+    from gradio.blocks import Block
+    if TYPE_CHECKING:
+        from gradio.components import Timer
 
 
 
@@ -176,4 +181,3 @@ with demo:
 
 
 demo.queue().launch(share=True,server_port=6082)
-
