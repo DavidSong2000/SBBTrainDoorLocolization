@@ -19,6 +19,8 @@ from tasks.automatic_mask_generator import SemanticSamAutomaticMaskGenerator
 from tasks.interactive_idino_m2m_auto import show_anns
 from tasks.interactive_predictor import SemanticSAMPredictor
 
+# Variable to store click coordinates
+click_coordinates = None
 
 def prepare_image(image_pth):
     """
@@ -92,3 +94,59 @@ def plot_multi_results(iou_sort_masks, area_sort_masks, image_ori, save_path='..
         return result
     create_long_image(iou_sort_masks).save('../vis/all_results_sort_by_iou.png')
     create_long_image(area_sort_masks).save('../vis/all_results_sort_by_areas.png')
+
+# Function to handle click events and store coordinates
+def on_click(event):
+    global click_coordinates
+    if event.xdata is not None and event.ydata is not None:
+        x, y = int(event.xdata), int(event.ydata)
+        click_coordinates = (x, y)
+        print(f'Clicked at: ({x}, {y})')
+        plt.close()  # Close the plot after the click
+
+# Display the image and capture coordinates
+def get_click_coordinates(image, img_w, img_h):
+    global click_coordinates
+    click_coordinates = None  # Reset coordinates before each click
+    fig, ax = plt.subplots()
+    ax.imshow(image)
+    fig.canvas.mpl_connect('button_press_event', on_click)
+    plt.show()
+    return [click_coordinates[0] / img_w, click_coordinates[1] / img_h]  # Return normalized coordinates
+
+def select_mask(masks, iou_sort_masks, area_sort_masks, image_ori, save_path='../vis/'):
+    """
+    plot input image and its reuslts
+    """
+    if not os.path.exists(save_path):
+        os.mkdir(save_path)
+    plt.imshow(image_ori)
+    plt.savefig(os.path.join(save_path, 'input.png'))
+    plt.close()
+    def create_long_image(masks):
+        ims = []
+        for img in masks:
+            ims.append(img)
+        width, height = ims[0].size
+        result = Image.new(ims[0].mode, (width * len(ims), height))
+        for i, im in enumerate(ims):
+            result.paste(im, box=(i * width, 0))
+        return result
+    
+    save_dir = os.path.join(save_path, 'selected_masks.png')
+    long_image = create_long_image(area_sort_masks)
+    # display the image with GUI and you can click on the image to select the mask
+    coordinates = get_click_coordinates(np.asarray(long_image), long_image.width, long_image.height)
+    print("Returned Coordinates:", coordinates)
+    length = len(area_sort_masks)
+    mask_index = int(coordinates[0] * length)
+    final_mask = area_sort_masks[mask_index]
+    final_mask.save(save_dir)
+    plt.imshow(final_mask)
+    plt.show()
+    # use_mask = (masks[mask_index] > 0.0).cpu().numpy()
+    # # final_mask[final_mask > 0] = 1
+    # blend_img = image_ori * use_mask.reshape(image_ori.shape[0], image_ori.shape[1], 1)
+    # blend_img = blend_img.astype(np.uint8)
+    # blend_img = Image.fromarray(blend_img)
+    # blend_img.save(os.path.join(save_path, 'blend_img.png'))

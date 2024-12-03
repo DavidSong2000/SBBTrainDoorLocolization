@@ -6,6 +6,7 @@ from detectron2.config import get_cfg
 from detectron2.engine import DefaultPredictor
 import cv2
 from semantic_sam import prepare_image, plot_multi_results, build_semantic_sam, SemanticSAMPredictor
+from semantic_sam.build_semantic_sam import select_mask
 
 # get point position
 # display the image with GUI and you can click on the image to get the point position
@@ -47,5 +48,5 @@ original_image, input_image = prepare_image(image_pth='data/sbb_train_door/IMG_3
 
 with torch.no_grad():
     mask_generator = SemanticSAMPredictor(build_semantic_sam(model_type='L', ckpt='ckpt/swinl_only_sam_many2many.pth')) # model_type: 'L' / 'T', depends on your checkpint
-    iou_sort_masks, area_sort_masks = mask_generator.predict_masks(original_image, input_image, point=[[coordinates[0], coordinates[1]]]) # input point [[w, h]] relative location, i.e, [[0.5, 0.5]] is the center of the image
-    plot_multi_results(iou_sort_masks, area_sort_masks, original_image, save_path='./vis/')  # results and original images will be saved at save_path
+    masks, ious, [iou_sort_masks, area_sort_masks] = mask_generator.predict_masks_(original_image, input_image, point=[[coordinates[0], coordinates[1]]]) # input point [[w, h]] relative location, i.e, [[0.5, 0.5]] is the center of the image
+    select_mask(masks, iou_sort_masks, area_sort_masks, original_image, save_path='./vis/')  # results and original images will be saved at save_path

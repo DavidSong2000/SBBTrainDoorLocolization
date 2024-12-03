@@ -67,7 +67,7 @@ class SemanticSAMPredictor:
         for i, (pred_masks_pos, iou) in enumerate(zip(pred_masks_poses[ids], ious[ids])):
             iou = round(float(iou), 2)
             texts = f'{iou}'
-            mask = (pred_masks_pos > 0.0).cpu().numpy()
+            mask = (pred_masks_pos <= 0.0).cpu().numpy()
             area = mask.sum()
             conti = False
             if iou < self.thresh:
@@ -110,6 +110,11 @@ class SemanticSAMPredictor:
     def predict_masks(self, image_ori, image, point=None):
         masks, ious = self.predict(image_ori, image, point)
         return self.process_multi_mask(masks, ious, image_ori)
+    
+    def predict_masks_(self, image_ori, image, point=None):
+        masks, ious = self.predict(image_ori, image, point)
+        # return self.process_multi_mask(masks, ious, image_ori)
+        return masks, ious, self.process_multi_mask(masks, ious, image_ori)
 
     @staticmethod
     def remove_small_regions(

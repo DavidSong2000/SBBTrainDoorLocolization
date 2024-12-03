@@ -372,6 +372,7 @@ class Visualizer:
         self.metadata = metadata
         self.output = VisImage(self.img, scale=scale)
         self.cpu_device = torch.device("cpu")
+        self.rgba = None
 
         # too small texts are useless, therefore clamp to 9
         self._default_font_size = max(
@@ -1067,6 +1068,8 @@ class Visualizer:
             color = random_color(rgb=True, maximum=1)
         color = mplc.to_rgb(color)
 
+        alpha = 1.0
+
         has_valid_segment = False
         binary_mask = binary_mask.astype("uint8")  # opencv needs uint8
         mask = GenericMask(binary_mask, self.output.height, self.output.width)
@@ -1081,12 +1084,14 @@ class Visualizer:
                 has_valid_segment = True
                 segment = segment.reshape(-1, 2)
                 self.draw_polygon(segment, color=color, edge_color=edge_color, alpha=alpha)
+                # self.draw_polygon(segment, color=color, edge_color=edge_color, alpha=1.0)
         else:
             # TODO: Use Path/PathPatch to draw vector graphics:
             # https://stackoverflow.com/questions/8919719/how-to-plot-a-complex-polygon
             rgba = np.zeros(shape2d + (4,), dtype="float32")
             rgba[:, :, :3] = color
             rgba[:, :, 3] = (mask.mask == 1).astype("float32") * alpha
+            # rgba[:, :, 3] = (mask.mask == 0).astype("float32") * 1.0
             has_valid_segment = True
             self.output.ax.imshow(rgba, extent=(0, self.output.width, self.output.height, 0))
 
