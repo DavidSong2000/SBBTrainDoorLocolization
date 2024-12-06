@@ -30,6 +30,7 @@
    `python scripts/train.py`
 
 6. 跑 test（我已经训练了一个 model 并且 push 了上来，所以也可以跳过 3 跑 4 这一步）
+
    `python scripts/inference.py`
 
 
