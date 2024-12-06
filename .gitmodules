@@ -1,0 +1,3 @@
+[submodule "limap"]
+	path = limap
+	url = https://github.com/cvg/limap.git

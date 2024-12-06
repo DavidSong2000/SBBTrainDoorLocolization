@@ -1,0 +1,10 @@
+# 
+outputs/
+MixedReality/
+results_sbb/
+build/
+third-party/
+# 
+*.zip
+*.pdf
+*.png

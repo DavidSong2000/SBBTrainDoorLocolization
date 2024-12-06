@@ -1,0 +1,8 @@
+LICENCE
+README.md
+setup.py
+limap.egg-info/PKG-INFO
+limap.egg-info/SOURCES.txt
+limap.egg-info/dependency_links.txt
+limap.egg-info/not-zip-safe
+limap.egg-info/top_level.txt
