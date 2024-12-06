@@ -15,6 +15,7 @@
 2. 在`yoloBox/datasets/data`下载数据集
 
    ```
+   mkdir -p datasets/data
    curl -L "https://universe.roboflow.com/ds/xaw2JvX2ej?key=s9onrnHcEf" > roboflow.zip; unzip roboflow.zip; rm roboflow.zip
    ```
 
