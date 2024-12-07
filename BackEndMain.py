@@ -27,6 +27,7 @@ def load_reconstruction():
     Load pre-trained reconstruction data.
     """
     print("Loading LIMAP reconstruction data...")
+    # TODO: LIMAP PRE-TRAINED RECONSTRUCTION (Feature reconstruction) API
     # data = LoadReconstruction()  # Replace with actual function to load your data
     data = 0
     print("Reconstruction data loaded successfully.")
@@ -115,10 +116,12 @@ def process_localization(image):
     try:
         # Step 1: Run YOLO to filter the image
         # bounded_pic = PicBounding(image)
+        # TODO: YOLO API
         bounded_pic = image
 
         # Step 2: Run LIMAP Localization using the reconstruction data
         # Replace the following placeholder with your actual localization logic
+        # TODO: LIMAP REAL TIME LOCALIZATION（feature matching）API
         localization_result = {"x": 100, "y": 200, "width": 50, "height": 50}
 
         return {"status": "success", "localization": localization_result}
