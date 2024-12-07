@@ -1,0 +1,11 @@
+{
+  "SCENE": 0,
+  "DBG": 0,
+  "N_FRAMES": 30,
+  "N_Z_LVLS": 5,
+  "RND_CAM": 1,
+  "DATA_DIR": "test_coco_2",
+  "MODEL": "nerf",
+  "COCO": 1,
+  "IGNORE_DIST_THRES": 1000
+}

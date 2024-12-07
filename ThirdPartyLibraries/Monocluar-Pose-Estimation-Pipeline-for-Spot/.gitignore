@@ -1,0 +1,10 @@
+__pycache__
+*/__pycache__
+blenderproc.egg-info/
+.vscode/
+data/
+resources/
+blenderproc/external/vhacd
+.scratch
+.cache/
+output/
