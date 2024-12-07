@@ -51,8 +51,8 @@ logger.propagate = False
 #TODO: change the db_data_folder_path and the query_data_folder_path appropriately to where you saved the sbb doors dataset
 db_data_folder_path = Path("MixedReality/test_coco_2/scene_0-annotate/bop_data/train_pbr/000000")
 db_imgs_path = db_data_folder_path / "rgb"
-query_data_folder_path = Path("MixedReality/test_coco_2/scene_0-annotate/bop_data/train_pbr/000000")
-query_imgs_path = query_data_folder_path / "rgb"
+query_data_folder_path = Path("data/iPad_scans/2024_08_08_10_11_23_processed")
+query_imgs_path = query_data_folder_path / "frames"
 
 num_query_imgs=13
 num_db_imgs=80
@@ -145,6 +145,7 @@ def read_scene_lm(cfg):
 
         cv2.imwrite(str(curr_img_path), image) #write to freshly created folder where both db and query imgs will live
 
+        # random sample some images
         #collect images
         if i in sample:
             train_ids.append(image_id)
@@ -159,34 +160,43 @@ def read_scene_lm(cfg):
     #query images
     #adapted from https://github.com/microsoft/HoloLens2ForCV/blob/207205596840ae6e7b8c2a795d35c3c4e7bec22e/Samples/StreamRecorder/StreamRecorderConverter/project_hand_eye_to_pv.py#L25C5-L25C17
     #these parameters are not correct for the images. We just read them in so that the code runs through.
-    intrinsics_and_exstrinsics_path = query_data_folder_path / "2023-10-06-005852_pv.txt"
-    with open(intrinsics_and_exstrinsics_path) as f:
-        lines = f.readlines()
-    # The first line contains info about the intrinsics.
-    # The following lines (one per frame) contain timestamp, focal length and transform PVtoWorld
-    #intrinsic parameters
-    frame = lines[0].split(',')
-    intrinsics_ox, intrinsics_oy = float(frame[0]), float(frame[1])
-    intrinsics_width, intrinsics_height = int(frame[2]), int(frame[3])
-    img_hw = [intrinsics_height, intrinsics_width]
+    # intrinsics_and_exstrinsics_path = query_data_folder_path / "2023-10-06-005852_pv.txt"
+    query_camera_json = open(str(query_data_folder_path/"camera.json"))
+    query_camera = json.load(query_camera_json)
+    # intrinsics_and_exstrinsics_path = query_data_folder_path / "camera.json"
+    # with open(intrinsics_and_exstrinsics_path) as f:
+    #     lines = f.readlines()
+    # # The first line contains info about the intrinsics.
+    # # The following lines (one per frame) contain timestamp, focal length and transform PVtoWorld
+    # #intrinsic parameters
+    # frame = lines[0].split(',')
+    # intrinsics_ox, intrinsics_oy = float(frame[0]), float(frame[1])
+    # intrinsics_width, intrinsics_height = int(frame[2]), int(frame[3])
+    # img_hw = [intrinsics_height, intrinsics_width]
+    intrinsics_ox, intrinsics_oy = query_camera["0"]["cam_K"][2], query_camera["0"]["cam_K"][5]
+    img_hw = [query_camera["0"]["height"], query_camera["0"]["width"]]
     K_query = np.array([])
+    query_depth_scale = query_camera["0"]["depth_scale"]
 
     id_to_pose_and_K = {}
-    for i_frame, frame in enumerate(lines[1:]):
+    # for i_frame, frame in enumerate(lines[1:]):
+    for i in range(len(query_camera)):
         # Row format is
         # timestamp, focal length (2), transform PVtoWorld (4x4)
-        frame = frame.split(',')
-        id = int(frame[0])
+        # frame = frame.split(',')
+        # id = int(frame[0])
+        camera_temp = query_camera[str(i)]
+        id = camera_temp["idx"]
         #intrinsic parameters
-        focal_length_x, focal_length_y = float(frame[1]), float(frame[2])
+        focal_length_x, focal_length_y = camera_temp["cam_K"][0], camera_temp["cam_K"][4]
         #extrinsic parameters
-        transform_matrix = np.array(frame[3:20]).astype(float).reshape((4, 4))
+        transform_matrix = np.array(camera_temp["cam_w2c"]).astype(float).reshape((4, 4))
         rotation = transform_matrix[:3,:3].copy()
         translation = transform_matrix[:3,3].copy()
         K_query = np.array([[focal_length_x, 0, intrinsics_ox],
                     [0, focal_length_y, intrinsics_oy],
                     [0, 0, 1]])
-        id_to_pose_and_K[id] = [{"rotation":rotation, "translation":translation, "K":K}]
+        id_to_pose_and_K[id] = [{"rotation":rotation, "translation":translation, "K":K_query}]
 
     num_tot_images = len([f for f in query_imgs_path.iterdir()])
     assert len(id_to_pose_and_K)==num_tot_images, "For query images, ...pv.txt file and PV folder do not contain the same number of images."
@@ -197,10 +207,15 @@ def read_scene_lm(cfg):
     
     short_id_to_image_id = {}
 
+    # 
+    query_imgs_files = [f for f in query_imgs_path.iterdir()]
+    query_imgs_files.sort()
+
     #go over query images
-    for i, filename in enumerate(query_imgs_path.iterdir()):
+    for i, filename in enumerate(query_imgs_files):
         # load groundtruth pose
-        image_id = int(filename.stem)
+        # image_id = int(filename.stem)
+        image_id = int(filename.stem.split("_")[1])
         short_id = i+1000 #to make the ids distinct from database ids
         short_id_to_image_id[short_id] = image_id
         curr_img_path = final_imgs_folder_path / "image{0:08d}.png".format(short_id)
@@ -210,7 +225,9 @@ def read_scene_lm(cfg):
         current_pose_and_K = id_to_pose_and_K[image_id]
         R_matrix = current_pose_and_K[0]["rotation"]
         t_matrix = current_pose_and_K[0]["translation"]
-        t_matrix = t_matrix/1000
+        # t_matrix = t_matrix/1000
+        t_matrix = t_matrix / query_depth_scale
+
         pose = limap.base.CameraPose(R_matrix, t_matrix)
         K_query = current_pose_and_K[0]["K"]
 
@@ -223,6 +240,7 @@ def read_scene_lm(cfg):
 
         cv2.imwrite(str(curr_img_path), image) #write to freshly created folder where both db and query imgs will live
 
+        # random sample some images
         #collect images
         if i in sample:
             query_ids.append(short_id)
@@ -285,7 +303,7 @@ def run_hloc_lm(cfg, image_dir, imagecols, neighbors, train_ids, query_ids, id_t
 
     # pairs for retrieval
     if logger: logger.info('Extract features for image retrieval...')
-    global_descriptors = extract_features.main(retrieval_conf, Path(cfg['output_dir']) / image_dir, results_dir, image_list=image_list)
+    global_descriptors = extract_features.main(retrieval_conf, image_dir, results_dir, image_list=image_list)
     pairs_from_retrieval.main(
         global_descriptors, loc_pairs, num_loc,
         db_list=['image{0:08d}.png'.format(img_id) for img_id in train_ids],
@@ -294,7 +312,7 @@ def run_hloc_lm(cfg, image_dir, imagecols, neighbors, train_ids, query_ids, id_t
     # feature extraction
     if logger: logger.info('Feature Extraction...')
     features = extract_features.main(
-        feature_conf, Path(cfg['output_dir']) / image_dir, results_dir, as_half=True, image_list=image_list)
+        feature_conf, image_dir, results_dir, as_half=True, image_list=image_list)
     loc_matches = match_features.main(
         matcher_conf, loc_pairs, feature_conf['output'], results_dir)
 

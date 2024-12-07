@@ -4,6 +4,7 @@ MixedReality/
 results_sbb/
 build/
 third-party/
+data/
 # 
 *.zip
 *.pdf
