@@ -4,7 +4,7 @@ from PIL import Image, ImageDraw
 import numpy as np
 
 
-def single_img_bounding(img):
+def single_img_bounding(img,model):
     """
     input:PIL Image(RGB格式)
     """
@@ -12,7 +12,6 @@ def single_img_bounding(img):
     original_img = img.convert("RGB")
 
     # 初始化模型（可在函数外初始化）
-    model = YOLO('../weights/best.pt')
     results = model.predict(original_img, verbose=False)
     result = results[0]
 

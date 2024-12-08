@@ -5,7 +5,11 @@ import sys
 from PIL import Image
 import io
 
-# from yoloBox.scripts import PicBounding
+from matplotlib import pyplot as plt
+from ultralytics import YOLO
+
+from yoloBox.scripts.single_img_bounding import single_img_bounding
+
 # from limap.scripts import LoadReconstruction
 
 # Global variable for reconstruction data
@@ -33,7 +37,7 @@ def load_reconstruction():
     print("Reconstruction data loaded successfully.")
     return data
 
-def start_server(host='0.0.0.0', port=5000):
+def start_server(host='0.0.0.0', port=5001):
     """
     Start a TCP/IP server to handle front-end requests.
     """
@@ -78,21 +82,30 @@ def handle_client(client_socket):
             return
 
         # Unpack the image length
+
         image_length = struct.unpack('!I', length_data)[0]
         print(f"Expecting image data of length: {image_length} bytes")
 
         # Receive the image data
         image_data = b""
         while len(image_data) < image_length:
-            packet = client_socket.recv(4096)
-            if not packet:
+            packet = client_socket.recv(4096) # Receive the remaining data
+            print(f"Received packet of length: {len(packet)} bytes")
+            if  not packet:
                 break
             image_data += packet
+            print(f"Total received: {len(image_data)} bytes")
+
 
         print(f"Received image data of length: {len(image_data)} bytes")
 
         # Decode the image
         image = Image.open(io.BytesIO(image_data))
+        # save the image to script
+        image.save('image.png')
+
+
+
 
         # Run the localization process
         result = process_localization(image)
@@ -117,7 +130,10 @@ def process_localization(image):
         # Step 1: Run YOLO to filter the image
         # bounded_pic = PicBounding(image)
         # TODO: YOLO API
+        model = YOLO('yoloBox/weights/best.pt')
         bounded_pic = image
+        single_img_bounding(bounded_pic, model)
+        bounded_pic.save('bounded_pic.png')
 
         # Step 2: Run LIMAP Localization using the reconstruction data
         # Replace the following placeholder with your actual localization logic
