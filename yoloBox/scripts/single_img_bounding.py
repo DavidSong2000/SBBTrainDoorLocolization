@@ -11,26 +11,20 @@ def single_img_bounding(img,model):
 
     original_img = img.convert("RGB")
 
-    # 初始化模型（可在函数外初始化）
+    # 使用 YOLO 模型预测
     results = model.predict(original_img, verbose=False)
     result = results[0]
 
+    # 提取预测框
     boxes = result.boxes.xyxy if hasattr(result.boxes, 'xyxy') else []
 
-    rgba_img = original_img.convert("RGBA")
-    width, height = rgba_img.size
+    # 创建一个黑色背景
+    black_img = Image.new("RGB", original_img.size, (0, 0, 0))
 
-
-    mask = Image.new("L", (width, height), 0)
-    draw = ImageDraw.Draw(mask)
-
-    # 在mask上绘制bbox区域为不透明
+    # 将原始图像上的框内区域复制到黑色背景上
     for box in boxes:
         xmin, ymin, xmax, ymax = [int(v) for v in box]
-        draw.rectangle([xmin, ymin, xmax, ymax], fill=255)
+        cropped_region = original_img.crop((xmin, ymin, xmax, ymax))
+        black_img.paste(cropped_region, (xmin, ymin))
 
-    # 将mask作为alpha通道
-    r, g, b, _ = rgba_img.split()
-    rgba_img = Image.merge("RGBA", (r, g, b, mask))
-
-    return rgba_img
+    return black_img

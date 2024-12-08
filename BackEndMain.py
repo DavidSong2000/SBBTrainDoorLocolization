@@ -132,7 +132,7 @@ def process_localization(image):
         # TODO: YOLO API
         model = YOLO('yoloBox/weights/best.pt')
         bounded_pic = image
-        single_img_bounding(bounded_pic, model)
+        bounded_pic= single_img_bounding(bounded_pic, model)
         bounded_pic.save('bounded_pic.png')
 
         # Step 2: Run LIMAP Localization using the reconstruction data
