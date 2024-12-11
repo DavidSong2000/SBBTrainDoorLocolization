@@ -68,12 +68,32 @@ def start_server(host='0.0.0.0', port=5001):
 
     print("Server has been stopped.")
     server_socket.close()
+    
+def receive_data(client_socket, length):
+    data = bytearray()
+    while len(data) < length:
+        packet = client_socket.recv(length - len(data))
+        if not packet:
+            return None
+        data.extend(packet)
+    return data
 
 def handle_client(client_socket):
     """
     Handle a single client connection.
     """
     try:
+        # receive camera pose 12+16
+        pose_data = receive_data(client_socket, 7 * 4)  # 7个float，每个float 4字节
+        camera_position = struct.unpack('fff', pose_data[:12])
+        camera_rotation = struct.unpack('ffff', pose_data[12:])
+        if camera_position is None or camera_rotation is None:
+            print("Failed to receive camera pose")
+            client_socket.close()
+            return
+        print(f'Camera Position: {camera_position}')
+        print(f'Camera Rotation: {camera_rotation}')
+        
         # Receive image length (4 bytes)
         length_data = client_socket.recv(4)
         if not length_data:
@@ -82,7 +102,6 @@ def handle_client(client_socket):
             return
 
         # Unpack the image length
-
         image_length = struct.unpack('!I', length_data)[0]
         print(f"Expecting image data of length: {image_length} bytes")
 
@@ -94,7 +113,7 @@ def handle_client(client_socket):
             if not packet:
                 break
             image_data += packet
-            print(f"Total received: {len(image_data)} bytes / {image_length} bytes")
+            # print(f"Total received: {len(image_data)} bytes / {image_length} bytes")
 
         print(f"Received image data of length: {len(image_data)} bytes")
 
@@ -102,9 +121,6 @@ def handle_client(client_socket):
         image = Image.open(io.BytesIO(image_data))
         # save the image to script
         image.save('image.png')
-
-
-
 
         # Run the localization process
         result = process_localization(image)
