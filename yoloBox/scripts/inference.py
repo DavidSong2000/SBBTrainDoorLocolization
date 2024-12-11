@@ -5,8 +5,8 @@ from ultralytics import YOLO
 model = YOLO('weights/best.pt')
 
 
-image_path = 'test/'
-output_folder = 'output/'
+image_path = 'test/SyntheticScene0/'
+output_folder = 'output/SyntheticScene0/'
 os.makedirs(output_folder, exist_ok=True)  
 
 results = model(image_path)  
