@@ -90,12 +90,11 @@ def handle_client(client_socket):
         image_data = b""
         while len(image_data) < image_length:
             packet = client_socket.recv(4096) # Receive the remaining data
-            print(f"Received packet of length: {len(packet)} bytes")
-            if  not packet:
+            # print(f"Received packet of length: {len(packet)} bytes")
+            if not packet:
                 break
             image_data += packet
-            print(f"Total received: {len(image_data)} bytes")
-
+            print(f"Total received: {len(image_data)} bytes / {image_length} bytes")
 
         print(f"Received image data of length: {len(image_data)} bytes")
 
