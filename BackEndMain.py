@@ -83,6 +83,17 @@ def handle_client(client_socket):
     Handle a single client connection.
     """
     try:
+        # receive camera intrinsics 4*4
+        intrinsics_data = receive_data(client_socket, 4 * 4)
+        camera_focal_length = struct.unpack('ff', intrinsics_data[:8])
+        camera_principal_point = struct.unpack('ff', intrinsics_data[8:])
+        if camera_focal_length is None or camera_principal_point is None:
+            print("Failed to receive camera intrinsics")
+            client_socket.close()
+            return
+        print(f'Camera Focal Length: {camera_focal_length}')
+        print(f'Camera Principal Point: {camera_principal_point}')
+        
         # receive camera pose 12+16
         pose_data = receive_data(client_socket, 7 * 4)  # 7个float，每个float 4字节
         camera_position = struct.unpack('fff', pose_data[:12])
