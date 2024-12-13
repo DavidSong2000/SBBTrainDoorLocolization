@@ -1,6 +1,6 @@
-datasets/data/
-runs/
+datasets/
 output/
+test/
 *.cache
 
 *.pyc

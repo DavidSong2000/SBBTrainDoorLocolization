@@ -7,6 +7,6 @@ print("Model loaded successfully.")
 
 # 开始训练
 print("Starting training...")
-model.train(data='./data.yaml', epochs=10, imgsz=640)
+model.train(data='camera_annotated.yolov8/data.yaml', epochs=10, imgsz=640)
 
 print("Training finished.")
