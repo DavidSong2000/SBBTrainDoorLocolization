@@ -192,7 +192,10 @@ def process_localization(image):
         # Step 2: Run LIMAP Localization using the reconstruction data
         # Replace the following placeholder with your actual localization logic
         # TODO: LIMAP REAL TIME LOCALIZATION（feature matching）API
-        localization_result = {"x": 100, "y": 200, "width": 50, "height": 50}
+        localization_result = [[0.0, 0.0, 0.0], 
+                               [0.0, 0.0, 0.0], 
+                               [0.0, 0.0, 0.0],
+                               [0.0, 0.0, 0.0]]
 
         # save result information to json
         result_json_name = f'Client{client_idx}_localizationResult.json'
