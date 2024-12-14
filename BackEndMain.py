@@ -150,9 +150,14 @@ def handle_client(client_socket):
 
         # Decode the image
         image = Image.open(io.BytesIO(image_data))
-        # save the image to script
+        # save the image to Log
         image_name = f'Client{client_idx}_rawImage.png'
         image.save(os.path.join(current_log_path, image_name))
+        # save current image
+        current_image = image
+        current_image_name = 'rawimage00001000.png'
+        current_image.save(os.path.joint(os.getcwd(), current_image_name))
+
         # save camera information to json
         recieve_json_name = f'Client{client_idx}_cameraInfoRecieved.json'
         with open(os.path.join(current_log_path, recieve_json_name), 'w') as f:
@@ -162,7 +167,7 @@ def handle_client(client_socket):
         result = process_localization(image)
 
         # Send response to the client
-        response = str(result).encode('utf-8')
+        response = json.dumps(result).encode('utf-8')
         client_socket.sendall(response)
 
         client_idx += 1
@@ -188,6 +193,10 @@ def process_localization(image):
         bounded_pic= single_img_bounding(bounded_pic, model)
         bounded_pic_name = f'Client{client_idx}_boundedImage.png'
         bounded_pic.save(os.path.join(current_log_path, bounded_pic_name))
+        current_bounded_pic = bounded_pic
+        current_bounded_pic_name = 'image00001000.png'
+        current_bounded_pic.save(os.path.joint(os.getcwd(), current_bounded_pic_name))
+
 
         # Step 2: Run LIMAP Localization using the reconstruction data
         # Replace the following placeholder with your actual localization logic
@@ -202,8 +211,8 @@ def process_localization(image):
         with open(os.path.join(current_log_path, result_json_name), 'w') as f:
             json.dump(localization_result, f, sort_keys=False, indent=4)
 
-
-        return {"status": "success", "localization": localization_result}
+        return localization_result
+        # return {"status": "success", "localization": localization_result}
 
     except Exception as e:
         print(f"Error during processing: {e}")
