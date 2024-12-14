@@ -4,11 +4,20 @@ import signal
 import sys
 from PIL import Image
 import io
+import os 
+import time
+import json
 
 from matplotlib import pyplot as plt
 from ultralytics import YOLO
 
 from yoloBox.scripts.single_img_bounding import single_img_bounding
+
+# Info for saving folder
+time_now = time.strftime("%Y%m%d-%H_%M", time.localtime())
+# main_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/'
+main_path = os.getcwd()
+current_log_path = os.path.join(main_path, 'Logs/' + time_now)
 
 # from limap.scripts import LoadReconstruction
 
@@ -17,6 +26,9 @@ reconstruction_data = None
 
 # Flag to indicate whether the server should continue running
 running = True
+
+# Index for client
+client_idx = 0
 
 def signal_handler(sig, frame):
     """
@@ -82,7 +94,9 @@ def handle_client(client_socket):
     """
     Handle a single client connection.
     """
+    global client_idx
     try:
+        camera_info_recieved = {}
         # receive camera intrinsics 4*4
         intrinsics_data = receive_data(client_socket, 4 * 4)
         camera_focal_length = struct.unpack('ff', intrinsics_data[:8])
@@ -93,9 +107,12 @@ def handle_client(client_socket):
             return
         print(f'Camera Focal Length: {camera_focal_length}')
         print(f'Camera Principal Point: {camera_principal_point}')
+        # Save to camera info recieved dict
+        camera_info_recieved['camera_focal_length'] = camera_focal_length
+        camera_info_recieved['camera_principal_point'] = camera_principal_point
         
-        # receive camera pose 12+16
-        pose_data = receive_data(client_socket, 7 * 4)  # 7个float，每个float 4字节
+        # # Receive camera pose data (12 bytes for position, 16 bytes for rotation)
+        pose_data = receive_data(client_socket, 7 * 4)  # 7 floats, each float is 4 bytes
         camera_position = struct.unpack('fff', pose_data[:12])
         camera_rotation = struct.unpack('ffff', pose_data[12:])
         if camera_position is None or camera_rotation is None:
@@ -104,6 +121,9 @@ def handle_client(client_socket):
             return
         print(f'Camera Position: {camera_position}')
         print(f'Camera Rotation: {camera_rotation}')
+        # Save to camera info recieved dict
+        camera_info_recieved['camera_position'] = camera_position
+        camera_info_recieved['camera_rotation'] = camera_rotation
         
         # Receive image length (4 bytes)
         length_data = client_socket.recv(4)
@@ -131,7 +151,12 @@ def handle_client(client_socket):
         # Decode the image
         image = Image.open(io.BytesIO(image_data))
         # save the image to script
-        image.save('image.png')
+        image_name = f'Client{client_idx}_rawImage.png'
+        image.save(os.path.join(current_log_path, image_name))
+        # save camera information to json
+        recieve_json_name = f'Client{client_idx}_cameraInfoRecieved.json'
+        with open(os.path.join(current_log_path, recieve_json_name), 'w') as f:
+            json.dump(camera_info_recieved, f, sort_keys=False, indent=4)
 
         # Run the localization process
         result = process_localization(image)
@@ -139,6 +164,8 @@ def handle_client(client_socket):
         # Send response to the client
         response = str(result).encode('utf-8')
         client_socket.sendall(response)
+
+        client_idx += 1
 
     except Exception as e:
         print(f"Error handling connection: {e}")
@@ -159,12 +186,19 @@ def process_localization(image):
         model = YOLO('yoloBox/weights/best.pt')
         bounded_pic = image
         bounded_pic= single_img_bounding(bounded_pic, model)
-        bounded_pic.save('bounded_pic.png')
+        bounded_pic_name = f'Client{client_idx}_boundedImage.png'
+        bounded_pic.save(os.path.join(current_log_path, bounded_pic_name))
 
         # Step 2: Run LIMAP Localization using the reconstruction data
         # Replace the following placeholder with your actual localization logic
         # TODO: LIMAP REAL TIME LOCALIZATION（feature matching）API
         localization_result = {"x": 100, "y": 200, "width": 50, "height": 50}
+
+        # save result information to json
+        result_json_name = f'Client{client_idx}_localizationResult.json'
+        with open(os.path.join(current_log_path, result_json_name), 'w') as f:
+            json.dump(localization_result, f, sort_keys=False, indent=4)
+
 
         return {"status": "success", "localization": localization_result}
 
@@ -173,6 +207,13 @@ def process_localization(image):
         return {"status": "error", "message": str(e)}
 
 if __name__ == '__main__':
+    # Create Saving Folder
+    if os.path.exists(current_log_path):  # 看文件夹是否存在
+        print('文件夹已存在')
+    else:  # 如果不存在
+        os.makedirs(current_log_path)  # 则创建文件夹
+        print(f'Created Folder {current_log_path}')
+
     # Register the signal handler to handle Ctrl+C
     signal.signal(signal.SIGINT, signal_handler)
 
