@@ -7,6 +7,7 @@ import io
 import os 
 import time
 import json
+import threading
 
 from matplotlib import pyplot as plt
 from ultralytics import YOLO
@@ -156,7 +157,7 @@ def handle_client(client_socket):
         # save current image
         current_image = image
         current_image_name = 'rawimage00001000.png'
-        current_image.save(os.path.joint(os.getcwd(), current_image_name))
+        current_image.save(os.path.join(os.getcwd(), current_image_name))
 
         # save camera information to json
         recieve_json_name = f'Client{client_idx}_cameraInfoRecieved.json'
@@ -164,13 +165,24 @@ def handle_client(client_socket):
             json.dump(camera_info_recieved, f, sort_keys=False, indent=4)
 
         # Run the localization process
-        result = process_localization(image)
+        result = None
+        def localization_thread(image):
+            nonlocal result
+            result = communicate_with_remote_server(image)
+        
+        localization_thread_instance = threading.Thread(target=localization_thread, args=(image,))
+        localization_thread_instance.start()
+        localization_thread_instance.join()  # Wait for the result
 
-        # Send response to the client
-        response = json.dumps(result).encode('utf-8')
-        client_socket.sendall(response)
+        if result:
+            # Send response to the client
+            response = json.dumps(result).encode('utf-8')
+            client_socket.sendall(response)
 
-        client_idx += 1
+            client_idx += 1
+        else:
+            print("Can't fetch localization result")
+
 
     except Exception as e:
         print(f"Error handling connection: {e}")
@@ -179,6 +191,40 @@ def handle_client(client_socket):
 
     finally:
         client_socket.close()
+
+def communicate_with_remote_server(image):
+    """
+    Communicate with the remote server to process the image.
+    """
+    try:
+        # Convert image to bytes
+        buffer = io.BytesIO()
+        image.save(buffer, format='PNG')
+        image_bytes = buffer.getvalue()
+
+        # Connect to the remote localization server
+        remote_host = '192.168.1.123'  # Replace with the remote server's IP
+        remote_port = 6001  # Replace with the remote server's port
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as remote_socket:
+            remote_socket.connect((remote_host, remote_port))
+
+            # Send image length and image data
+            remote_socket.sendall(struct.pack('!I', len(image_bytes)))
+            remote_socket.sendall(image_bytes)
+
+            # Receive response data
+            response_data = b""
+            packet = remote_socket.recv(48)
+            response_data += packet
+
+        # Decode and return the response
+        localization_result = json.loads(response_data.decode('utf-8'))
+        return localization_result
+
+    except Exception as e:
+        print(f"Error during remote localization: {e}")
+        return {"status": "error", "message": str(e)}
+    
 
 def process_localization(image):
     """
@@ -195,7 +241,7 @@ def process_localization(image):
         bounded_pic.save(os.path.join(current_log_path, bounded_pic_name))
         current_bounded_pic = bounded_pic
         current_bounded_pic_name = 'image00001000.png'
-        current_bounded_pic.save(os.path.joint(os.getcwd(), current_bounded_pic_name))
+        current_bounded_pic.save(os.path.join(os.getcwd(), current_bounded_pic_name))
 
 
         # Step 2: Run LIMAP Localization using the reconstruction data

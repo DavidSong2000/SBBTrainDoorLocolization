@@ -2,11 +2,11 @@ import os
 from ultralytics import YOLO
 
 
-model = YOLO('weights/best.pt')
+model = YOLO('runs/detect/train/weights/best.pt')
 
 
-image_path = 'test/SyntheticScene0/'
-output_folder = 'output/SyntheticScene0/'
+image_path = 'test/SyntheticScene6/'
+output_folder = 'output/NewModel/SyntheticScene6/'
 os.makedirs(output_folder, exist_ok=True)  
 
 results = model(image_path)  
